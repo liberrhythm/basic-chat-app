@@ -2,32 +2,70 @@
 <html>
 <head>
     <title>socket.io app</title>
+
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font: 13px Helvetica, Arial; }
-        form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-        form input { border: 0; padding: 10px; width: 90%; margin-right: 0.5%; }
-        form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages-form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+        #messages-form input { border: 0; padding: 10px; width: 90%; margin-right: 0.5%; }
+        #messages-form button { width: 9%; border: none; padding: 10px; }
+        #messages { list-style-type: none; }
         #messages li { padding: 5px 10px; }
         #messages li:nth-child(odd) { background: #eee; }
+        #header { display: none; padding: 1rem; }
     </style>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 </head>
 
 <body>
+    <div id="nickname-modal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">choose a nickname</h5>
+            </div>
+            <div class="modal-body">
+                <form id="nickname-form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="nickname-field" aria-describedby="nickname" placeholder="ex. mystical rainbow">
+                    </div>
+                    <button id="modal-btn" type="submit" class="btn btn-primary float-right" disabled>Submit</button>
+                </form>
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <div id="header">
+        <h2 id="nickname" class="font-weight-bold float-right"></h2>
+    </div>
+
     <ul id="messages"></ul>
-    <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
+    <form id="messages-form" action="">
+        <input id="m" autocomplete="off" />
+        <button>Send</button>
     </form>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
     <script>
         $(() => {
+            $(window).on("load", () => {
+                $("#nickname-modal").modal({ backdrop: "static", show: true });
+            });
+
             var socket = io();
 
-            $("form").submit((e) => {
+            $("#messages-form").submit((e) => {
                 e.preventDefault();
                 let message = $("#m").val()
                 $("#m").val("");
@@ -40,10 +78,37 @@
             socket.on("message", (Message) => {
                 $("#messages").append($("<li>").text(Message.message));
             });
+
+            $("#nickname-form").submit((e) => {
+                e.preventDefault();
+                let nickname = $("#nickname-field").val();
+                $("#nickname").text(nickname);
+
+                $("#header").css({"display": "block"})
+
+                console.log("closing popup modal");
+                $("#nickname-modal").modal("hide");
+
+                submitUser({ name: nickname, messages: [] });
+                return false;
+            });
         })
-        
+
+        $(() => {
+            $("#nickname-field").keyup(() => {
+                let nickname = $("#nickname-field").val();
+                if (nickname) $('#modal-btn').removeAttr('disabled')
+                else $('#modal-btn').attr('disabled', 'disabled');
+            });
+            
+        })
+
         function sendMessage(message) {
-            $.post("http://localhost:3000/messages", message)
+            $.post("http://localhost:3000/messages", message);
+        }
+
+        function submitUser(user) {
+            $.post("http://localhost:3000/users", user);
         }
     </script>
 </body>

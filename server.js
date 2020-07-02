@@ -2,13 +2,19 @@ var express = require("express");
 var mongoose = require("mongoose");
 var bodyParser = require("body-parser");
 
-var dbUrl = "mongodb+srv://test:test@cluster0.zfdpz.mongodb.net/Messages?retryWrites=true&w=majority";
+var dbUrl = "mongodb+srv://test:test@cluster0.zfdpz.mongodb.net/User?retryWrites=true&w=majority";
 mongoose.connect(dbUrl, (err) => {
     if (err) console.log(err);
     else console.log("connection successful");
 });
 
+var User = mongoose.model("User", { name: String, messages: [] });
 var Message = mongoose.model("Message", { name: String, message: String });
+
+User.deleteMany({}, () => {
+    console.log("cleared all users");
+});
+
 Message.deleteMany({}, () => {
     console.log("cleared all messages");
 });
@@ -52,6 +58,15 @@ app.post("/messages", (req, res) => {
     message.save((err) => {
         if (err) sendStatus(500);
         io.emit("message", req.body);
+        res.sendStatus(200);
+    });
+});
+
+app.post("/users", (req, res) => {
+    var user = new User(req.body);
+    user.save((err) => {
+        if (err) sendStatus(500);
+        io.emit("user", req.body);
         res.sendStatus(200);
     });
 });
