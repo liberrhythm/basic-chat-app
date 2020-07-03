@@ -42,7 +42,11 @@
             <h2 id="nickname" class="font-weight-bold"></h2>
         </div>
     
-        <div id="messages"></div>
+        <div id="chat-window">
+            <div id="messages"></div>
+            <div id="typing"></div>
+        </div>
+        
     
         <div id="footer">
             <form id="messages-form" class="form-inline">
@@ -69,6 +73,7 @@
             });
 
             var socket = io();
+            let usersTyping = [];
 
             $("#messages-form").submit((e) => {
                 e.preventDefault();
@@ -95,12 +100,38 @@
 
             // get notified when new users join
             socket.on("other user", (otherUser) => {
-                $("#messages").append($("<div class='user'>").text(otherUser.name + " has joined the chat"));
+                const color = $("input[type='checkbox']").prop("checked") ? "white" : "black";
+                $("#messages").append($("<div class='user'>").text(otherUser.name + " has joined the chat").css({ color }));
             });
 
             // get notified when users disconnect
             socket.on("other disconnect", (otherUser) => {
-                $("#messages").append($("<div class='user'>").text("a user has left the chat"));
+                const color = $("input[type='checkbox']").prop("checked") ? "white" : "black";
+                $("#messages").append($("<div class='user'>").text("a user has left the chat").css({ color }));
+            });
+
+            // get notified when other users start and stop typing
+            socket.on("other typing", (otherUser) => {
+                const color = $("input[type='checkbox']").prop("checked") ? "white" : "black";
+                const name = otherUser.name, typing = otherUser.typing;
+                const idx = usersTyping.indexOf(name);
+
+                if (typing && idx === -1) {
+                    usersTyping.push(name);
+                }
+                else if (!typing && idx > -1) {
+                    usersTyping.splice(idx, 1);
+                }
+
+                if (usersTyping.length > 1) {
+                    $("#typing").text("multiple people are typing...").css({ color });
+                }
+                else if (usersTyping.length === 1) {
+                    $("#typing").text(usersTyping[0] + " is typing...").css({ color });
+                }
+                else {
+                    $("#typing").text("");
+                }
             });
 
             $("#nickname-form").submit((e) => {
@@ -116,6 +147,25 @@
                 sessionStorage.setItem("color", user.color);
                 return false;
             });
+
+            $("#message-field").keydown(() => {
+                const info = { "name": sessionStorage.getItem("name"), "color": sessionStorage.getItem("color"), typing: true }
+                socket.emit("typing", info);
+            });
+
+            // delay function taken from https://stackoverflow.com/questions/1909441/how-to-delay-the-keyup-handler-until-the-user-stops-typing
+            function delay(fn, ms) {
+                let timer = 0;
+                return function(...args) {
+                    clearTimeout(timer);
+                    timer = setTimeout(fn.bind(this, ...args), ms || 0);
+                }
+            }
+
+            $("#message-field").keyup(delay((e) => {
+                const info = { "name": sessionStorage.getItem("name"), "color": sessionStorage.getItem("color"), typing: false }
+                socket.emit("typing", info);
+            }, 1500));
         })
 
         $(() => {

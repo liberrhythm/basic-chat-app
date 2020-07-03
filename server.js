@@ -33,6 +33,14 @@ io.on("connection", (socket) => {
     socket.on("message", (info) => {
         socket.broadcast.emit("message", info);
     });
+
+    socket.on("typing", (info) => {
+        socket.broadcast.emit("other typing", info);
+    });
+
+    socket.on("stopped typing", (info) => {
+        socket.broadcast.emit("other stopped typing", info);
+    });
 });
 
 // enable CORS
