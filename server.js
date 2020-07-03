@@ -23,14 +23,16 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 io.on("connection", (socket) => {
-    console.log("a user is connected");
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
+    console.log("new user is connected");
+
+    socket.on("disconnect", (user) => {
+        console.log(user);
+        console.log("disconnected");
+        socket.broadcast.emit("other disconnect", user);
     });
 
     socket.on("message", (msg) => {
-        console.log("message: " + msg);
-        io.emit("message", msg);
+        socket.broadcast.emit("message", msg);
     });
 });
 
@@ -57,8 +59,6 @@ app.post("/messages", async (req, res) => {
         user.messages.push({ text: message });
 
         await user.save();
-
-        io.emit("message", message);
         res.sendStatus(200);
     } catch (err) {
         res.sendStatus(500);
@@ -69,7 +69,7 @@ app.post("/users", (req, res) => {
     var user = new User(req.body);
     user.save((err) => {
         if (err) sendStatus(500);
-        io.emit("user", req.body);
+        io.emit("other user", req.body);
         res.sendStatus(200);
     });
 });
