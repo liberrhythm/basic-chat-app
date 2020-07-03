@@ -2,6 +2,7 @@ var express = require("express");
 var mongoose = require("mongoose");
 var bodyParser = require("body-parser");
 
+// mongodb not really used - ephemeral messaging (for now)
 var dbUrl = "mongodb+srv://test:test@cluster0.zfdpz.mongodb.net/User?retryWrites=true&w=majority";
 mongoose.connect(dbUrl, (err) => {
     if (err) console.log(err);
@@ -26,13 +27,11 @@ io.on("connection", (socket) => {
     console.log("new user is connected");
 
     socket.on("disconnect", (user) => {
-        console.log(user);
-        console.log("disconnected");
         socket.broadcast.emit("other disconnect", user);
     });
 
-    socket.on("message", (msg) => {
-        socket.broadcast.emit("message", msg);
+    socket.on("message", (info) => {
+        socket.broadcast.emit("message", info);
     });
 });
 
@@ -42,12 +41,6 @@ app.all('*', function(req, res, next) {
     res.header('Access-Control-Allow-Methods', 'PUT, GET, POST, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
     next();
-});
-
-app.get("/messages", (req, res) => {
-    Message.find({}, (err, messages) => {
-        res.send(messages);
-    });
 });
 
 app.post("/messages", async (req, res) => {

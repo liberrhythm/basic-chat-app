@@ -10,21 +10,8 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font: 13px Helvetica, Arial; }
-        #messages-form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-        #messages-form input { border: 0; padding: 1rem; margin-right: 0.5%; }
-        #header { display: none; padding: 1rem; top: 0; width: 100%; }
-        #messages { display: flex; flex-direction: column; align-items: flex-end; }
-        .message, .user { padding: 0.3rem 1rem; border-radius: 10px; margin: 0rem 0.3rem 0.3rem 0.3rem; }
-        .user { font-style: italic; }
-        #chat-screen {
-            display: flex;
-            flex-direction: column;
-        }
-        #footer { display: flex; }
-    </style>
+    <!-- index.html CSS -->
+    <link rel="stylesheet" type="text/css" href="index.css">
 </head>
 
 <body>
@@ -48,16 +35,16 @@
 
     <div id="chat-screen">
         <div id="header">
-            <h2 id="nickname" class="font-weight-bold float-right"></h2>
+            <label class="switch">
+                <input type="checkbox">
+                <span class="slider round"></span>
+            </label>
+            <h2 id="nickname" class="font-weight-bold"></h2>
         </div>
     
         <div id="messages"></div>
     
         <div id="footer">
-            <!-- <form id="messages-form" action="">
-                <input id="m" autocomplete="off" />
-                <button>Send</button>
-            </form> -->
             <form id="messages-form" class="form-inline">
                 <input type="text" class="form-control flex-fill mr-1" id="message-field" aria-describedby="message" placeholder="type a message">
                 <button id="messages-btn" type="submit" class="btn btn-primary float-right" disabled>Send</button>
@@ -90,15 +77,20 @@
                 $("#message-field").val("");
 
                 $("#messages").append($("<div class='message myMessage'>").text(message).css({ background: sessionStorage.getItem("color") }));
-                socket.emit("message", message);
+                $("#messages")[0].scrollTop = $("#messages")[0].scrollHeight;
 
-                submitMessage(message);
+                const info = { "name": sessionStorage.getItem("name"), "color": sessionStorage.getItem("color"), message }
+                socket.emit("message", info);
+
+                submitMessage(info);
                 return false;
             });
 
             // get other people's messages
-            socket.on("message", (message) => {
-                $("#messages").append($("<div class='message otherMessage'>").text(message).css({ background: "#8ec252" }));
+            socket.on("message", (info) => {
+                $("#messages").append($("<div class='username'>").text(info.name));
+                $("#messages").append($("<div class='message otherMessage'>").text(info.message).css({ background: info.color }));
+                $("#messages")[0].scrollTop = $("#messages")[0].scrollHeight;
             });
 
             // get notified when new users join
@@ -115,7 +107,7 @@
                 e.preventDefault();
                 let nickname = $("#nickname-field").val();
                 $("#nickname").text(nickname);
-                $("#header").css({"display": "block"})
+                $("#header").css({"display": "flex"})
                 $("#nickname-modal").modal("hide");
                 
                 let user = { name: nickname, color: getRandomColor(), messages: [] };
@@ -138,11 +130,24 @@
                 if (msg) $('#messages-btn').removeAttr('disabled')
                 else $('#messages-btn').attr('disabled', 'disabled');
             });
+
+            $("input[type='checkbox']").click((e) => {
+                let input = e.target;
+                if (input.checked) {
+                    $('body').css({ background: "black" });
+                    $("#nickname").css({ color: "white" });
+                    $(".user").css({ color: "white" });
+                }
+                else {
+                    $('body').css({ background: "white" });
+                    $("#nickname").css({ color: "black" });
+                    $(".user").css({ color: "black" });
+                }
+            });
         })
 
-        function submitMessage(message) {
-            let req = { "name": sessionStorage.getItem("name"), message };
-            $.post("http://localhost:3000/messages", req);
+        function submitMessage(info) {
+            $.post("http://localhost:3000/messages", info);
         }
 
         function submitUser(user) {
