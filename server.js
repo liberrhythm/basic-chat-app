@@ -8,15 +8,10 @@ mongoose.connect(dbUrl, (err) => {
     else console.log("connection successful");
 });
 
-var User = mongoose.model("User", { name: String, messages: [] });
-var Message = mongoose.model("Message", { name: String, message: String });
+var User = mongoose.model("User", { name: String, color: String, messages: [] });
 
 User.deleteMany({}, () => {
     console.log("cleared all users");
-});
-
-Message.deleteMany({}, () => {
-    console.log("cleared all messages");
 });
 
 var app = express();
@@ -53,13 +48,21 @@ app.get("/messages", (req, res) => {
     });
 });
 
-app.post("/messages", (req, res) => {
-    var message = new Message(req.body);
-    message.save((err) => {
-        if (err) sendStatus(500);
-        io.emit("message", req.body);
+app.post("/messages", async (req, res) => {
+    try {
+        let username = req.body.name;
+        let message = req.body.message;
+
+        const user = await User.findOne({ "name": username });
+        user.messages.push({ text: message });
+
+        await user.save();
+
+        io.emit("message", message);
         res.sendStatus(200);
-    });
+    } catch (err) {
+        res.sendStatus(500);
+    }
 });
 
 app.post("/users", (req, res) => {
